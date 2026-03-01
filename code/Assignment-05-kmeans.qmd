@@ -1,0 +1,152 @@
+---
+title: "Assignment 5 - K-means"
+author: "Samantha Wan"  
+format:
+  html:
+    code-fold: true 
+    embed-resources: true
+    toc: true
+    number-sections: true
+    theme: cerulean
+---
+
+# Goal of this assignment
+
+The goal of this assignment is for you to **explore the k-means algorithm** learned in class.
+
+In specific, you will be asked to:\
+- Use a different number of k than what we did in class,\
+- Validate the results of the new model, and\
+- Compare your results with those found in class
+
+# Instructions
+
+You will first need to watch (and code along with) the following k-means video:
+
+-   k-means lab: https://youtu.be/GFgMp5tYiMU?si=CI0E-2r-cYZLGVL1 (start from beginning of video, watch till the 01:10)\
+-   The partial script for the video above is in our GitHub repository, 04-classcode, **02-24_multivar_kmeans_partial.qmd**. Move the script mentioned above into the `code` subfolder of your `06_multivar` project
+
+**AFTER watching the video and developing the code in class**, then start working on this HW assignment (instructions below): - Move this script into the `code` subfolder of your `06_multivar` project\
+- On this script, fill your name under the `title` section of the YAML\
+- Go back to the class k-means script, choose a different number of k than what we did in class, and run it.
+
+**Setup**
+
+```{r}
+#| message: false
+#| warning: false
+
+#install.packages("ggcorrplot")
+#install.packages("factoextra")
+#install.packages("ggpmisc")
+
+library(tidyverse)
+library(ggcorrplot)
+library(broom)
+library(car)
+library(factoextra)
+library(ggpmisc)
+```
+
+```{r}
+weather <- read.csv("../data/weather_monthsum.csv")
+
+head(weather)
+```
+
+```{r}
+#Selecting only numeric variables and normalizing the data 
+weather_n <- weather %>%
+  dplyr::select(-c(year:strength_gtex))
+
+weather_norm  <- weather_n %>%
+  mutate(across(everything(), ~scale(.x)))
+```
+
+# Questions
+
+## 1. What number of k did you select? Why?
+
+```{r}
+#| message: false
+#| warning: false
+
+# Elbow and Silhouete Methods for visualizing dataset to determine K-value
+fviz_nbclust(weather_norm,
+             method = "wss",
+             k.max = 10,
+             FUNcluster = kmeans
+             )
+
+fviz_nbclust(weather_norm,
+             method = "s",
+             k.max = 10,
+             FUNcluster = kmeans
+             )
+
+```
+
+***I selected 3 k means clusters because based on the two visualization's 3 would be the next best choice to 4 clusters. Based on the Within Sum of Squares (elbow method) we see a more moderate drop between 3 and 4 than we did between 1 & 2 and 2 & 3. Then when looking at the Silhouette method 3 had the second highest peak.***
+
+```{r}
+mod_km3 <- kmeans(weather_norm,
+                  centers = 3,
+                  nstart =10
+                  )
+
+mod_km3
+```
+
+## 2. How many observations are there in each cluster?
+
+```{r}
+weather %>%
+  mutate(cluster = mod_km3$cluster) %>%
+  group_by(cluster) %>%
+  tally() 
+```
+
+***There were 108 observations in cluster 1, 253 in cluster 2, and 337 in cluster 3.***
+
+## 3. Using the `fviz_cluster()` function, import here the original plot with k=4 did in class, and the new plot with the number of k you selected for this exercise. How do they visually compare? Which one seems to be a better choice, and why?
+
+```{r}
+mod_km4 <- kmeans(weather_norm,
+                  centers = 4,
+                  nstart =10
+                  )
+fviz_cluster(mod_km4,
+             data = weather_norm
+             )
+```
+
+```{r}
+fviz_cluster(mod_km3,
+             data = weather_norm
+             )
+```
+
+***I still think that 4 was the optimal choice when looking at these clusters using the K means method of clustering. When we look at the visualization of 3 clusters its apparent that there is another cluster to the far left that should be it's own distinct cluster which is what we see when we cluster into 4 groups.***
+
+# Submitting your work
+
+Once you have developed all the code and answers, make sure to Render this quarto file.
+
+**Notes on rendering**:
+
+-   Make sure to render your work and inspect how the final html look like.\
+-   If it does not look professional for whatever reason, then fix the issue, re-render it, recheck.\
+-   Only send me your work once your html file looks professional.
+    -   **DO NOT** delete the file's heading levels (# and ##). They set up the proper heading 1 and 2 levels, and I use them to guide my grading.\
+
+    -   If a given chunk is also outputting warnings or messages, inhibit this behavior by changing the chunk options `message` and `warning` to `FALSE` (I'll demo this in a moment).
+
+    -   If, after rendered, 2 lines of text are connected and you wish to "break line" between them, add 2 extra spaces after the first one (I'lld demo this in a moment).
+
+After rendering, an .html file will be created on your `code` folder.
+
+Rename this file to `Assignment-05-kmeans-LASTNAME.html`.
+
+For ex., mine would be `Assignment-05-kmeans-Bastos.html`.
+
+Submit your work by uploading the **html** file to **eLC Assignment #5 - K-means** by Monday March 2nd 11:59 pm.
